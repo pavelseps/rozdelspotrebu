@@ -6,6 +6,9 @@
     <link rel="stylesheet" href="css/default-bootstrap.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
     <script type="text/javascript" src="js/controllers.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/plugins.js"></script>
+    <!--script src="http://maps.google.com/maps/api/js?client=AIzaSyB3rOrP3AWfgGju-LnPhgAKaOOR89f8Uf8"></script-->
 </head>
 <body>
 
@@ -45,23 +48,22 @@
                 <table class="table table-striped">
                     <thead>
                     <tr>
-                        <th>Jméno cestujícího</th>
+                        <th>Aktuálně cestuje</th>
                         <th>Start km</th>
-                        <th>Stop km</th>
-                        <th></th>
+                        <th>Čas nasednutí</th>
                     </tr>
                     </thead>
 
                     <tr ng-repeat="p in Persons">
-                        <td ng-if="p.deleted != true"><input class="form-control" placeholder="Jméno" type="text" ng-model="p.name" value="{{p.name}}"></td>
-                        <td ng-if="p.deleted != true"><input class="form-control" placeholder="Počáteční km" type="number" ng-model="p.startKm" ng-keyup="calc(p)" value="{{p.startKm}}"></td>
-                        <td ng-if="p.deleted != true"><input class="form-control" placeholder="Konečné km" type="number" ng-model="p.stopKm" ng-keyup="calc(p)" value="{{p.stopKm}}"></td>
-                        <td ng-if="p.deleted != true" class="text-right"><span class="btn btn-danger btn-sm" ng-click="deletePerson(p)">Odebrat cestujícího</span></td>
+                        <td ng-if="p.deleted != true">{{p.name}}</td>
+                        <td ng-if="p.deleted != true">{{p.startKm}}</td>
+                        <td ng-if="p.deleted != true">{{p.startTime}}</td>
                     </tr>
                 </table>
             </div>
             <div class="text-right">
-                <span class="btn btn-success" ng-click="addPerson()">Přidat cestujícího</span>
+                <span class="btn btn-danger" data-toggle="modal" data-target="#endDrive">Ukonči jízdu</span>
+                <span class="btn btn-success" data-toggle="modal" data-target="#addPerson">Přidat cestujícího</span>
             </div>
         </div>
     </div>
@@ -72,9 +74,65 @@
         </div>
         <div class="panel-body">
             <div ng-repeat="p in Persons">
-                <div ng-if="p.deleted != true && p.resultPrice != null">
-                    <strong>{{p.name}}</strong> zaplatí <strong>{{p.resultPrice}}kč</strong> za <strong>{{p.resultKm}}km</strong> jízdy.
+                <div ng-if="p.goingOut">
+                    <strong>{{p.name}}</strong> zaplatí <strong>{{p.priceSum}}kč</strong> za <strong>{{p.kmSum}}km</strong> jízdy.
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="addPerson" tabindex="-1" role="dialog" >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Přidat cestujíciho</h4>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Jméno</label>
+                    <input type="text" class="form-control" ng-model="newPersonName" placeholder="Jméno cestujícího">
+                </div>
+                <div class="form-group">
+                    <label>Kilometry na startu cestujícího</label>
+                    <input type="text" class="form-control" ng-model="newPersonStartKm" placeholder="Kilometry na startu cestujícího">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" ng-click="addPerson()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="endDrive" tabindex="-1" role="dialog" >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Ukončit jízdu pro cestujíciho</h4>
+            </div>
+            <div class="modal-body">
+                <div ng-repeat="p in Persons">
+                    <div ng-if="p.deleted != true">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" ng-model="p.goingOut"> {{p.name}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Aktualní kilometry</label>
+                    <input type="text" class="form-control" ng-model="actualKm" placeholder="Aktualní kilometry">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" ng-click="calc()">Save changes</button>
             </div>
         </div>
     </div>

@@ -1,108 +1,105 @@
 var app = angular.module('myApp', []);
 app.controller('myCtrl', function($scope) {
 
-    $scope.priceFuel = 0;
-    $scope.avgFuel = 0;
+    $scope.priceFuel = 29;
+    $scope.avgFuel = 5;
+
+    $scope.Persons = [];
+    $scope.actualPersons = 0;
+    $scope.actualPosition = {
+        latitude: 0,
+        longitude: 0
+    };
+    $scope.actualKm = 0;
+    $scope.lasStopKm = 0;
 
 
+    var idInit = 0;
 
-    var idInit = 1;
-    $scope.Persons = [
-        {
-            id:0
-        }
-    ];
+
 
     $scope.addPerson = function () {
-      $scope.Persons.push({
-          id: idInit++
-      })
+        $scope.Persons.push({
+            id: idInit++,
+            name: $scope.newPersonName,
+            startTime: new Date($.now()).toDateString(),
+            startKm: $scope.newPersonStartKm,
+            deleted: false,
+            goingOut: false,
+            priceSum: 0,
+            kmSum: 0
+        });
+        $scope.actualPersons++;
+        $scope.newPersonName = '';
+
+        $scope.calc(true);
     };
-    $scope.deletePerson = function (person) {
-        for(var p in $scope.Persons){
-            if($scope.Persons[p].id === person.id ){
-                $scope.Persons[p].deleted = true;
-                $scope.calc();
-                return;
-            }
-        }
-    };
 
-
-    $scope.calc = function (person) {
-
-        person = person||null;
-        if(person != null){
-            var result = parseInt(person.stopKm||0) - parseInt(person.startKm||0);
-            if(result < 0){
-                result = 0;
-            }
-            person.resultKm = result;
-        }
+    $scope.calc = function (status) {
+        status = status||false;
+        if(status)
+            $scope.actualKm = $scope.newPersonStartKm;
 
         var pricePerKm = $scope.priceFuel*$scope.avgFuel/100;
-        var checkpoints = getCheckpoints();
-        var personsNow = initPersons();
-        var kmBetween = 0;
-        var startCPerson = 0;
-        var startCPersonTemp = 0;
-
-        for(var c in checkpoints){
-            for(var person in $scope.Persons){
-                if($scope.Persons[person].deleted || $scope.Persons[person].startKm == null || $scope.Persons[person].stopKm == null || $scope.Persons[person].resultKm < 0)
-                    continue;
-
-                if(personsNow[$scope.Persons[person].id].active && startCPerson != 0){
-                    kmBetween = parseInt(c)-personsNow[$scope.Persons[person].id].startC;
-                    personsNow[$scope.Persons[person].id].price += kmBetween*pricePerKm/startCPerson;
-                    personsNow[$scope.Persons[person].id].startC = parseInt(c);
-                }
-
-                if($scope.Persons[person].startKm === parseInt(c)){
-                    personsNow[$scope.Persons[person].id].active = true;
-                    personsNow[$scope.Persons[person].id].startC = parseInt(c);
-                    startCPersonTemp++;
-                }
-
-                if($scope.Persons[person].stopKm === parseInt(c)){
-                    personsNow[$scope.Persons[person].id].active = false;
-                    startCPersonTemp--;
-                }
-            }
-            startCPerson += startCPersonTemp;
-            startCPersonTemp = 0;
-        }
+        var kmBetween = $scope.actualKm - $scope.lasStopKm;
+        var actualPrice = kmBetween*pricePerKm/$scope.actualPersons;
 
         for(var person in $scope.Persons){
-            if($scope.Persons[person].deleted || $scope.Persons[person].startKm == null || $scope.Persons[person].stopKm == null || $scope.Persons[person].resultKm < 0)
+            if($scope.Persons[person].deleted || $scope.Persons[person].startKm === $scope.actualKm)
                 continue;
 
-            $scope.Persons[person].resultPrice = personsNow[$scope.Persons[person].id].price.toFixed(2);
-        }
-    };
+            $scope.Persons[person].priceSum += actualPrice;
 
-    function getCheckpoints() {
-        var checkpoints = {};
-        for(var person in $scope.Persons){
-            checkpoints[$scope.Persons[person].startKm] = 1;
-            checkpoints[$scope.Persons[person].stopKm] = 1;
-        }
+            console.log($scope.Persons[person].priceSum);
 
-        return checkpoints;
-    }
-
-    function initPersons() {
-        var personsNow = {};
-        for(var person in $scope.Persons){
-            if(!$scope.Persons[person].deleted){
-                personsNow[$scope.Persons[person].id] = {
-                    active: false,
-                    startC: 0,
-                    price: 0
-                };
+            if($scope.Persons[person].goingOut){
+                $scope.Persons[person].deleted = true;
+                $scope.Persons[person].kmSum = $scope.actualKm - $scope.Persons[person].startKm;
+                $scope.actualPersons--;
             }
         }
-        return personsNow
+
+        $scope.lasStopKm = $scope.newPersonStartKm = $scope.actualKm;
+    };
+
+    $scope.getPersonsGoingOut = function () {
+
+
+    };
+
+    $scope.getActualDrivedKm = function () {
+        /*getActualLocation();
+
+        var origin1 = new google.maps.LatLng(55.930385, -3.118425);
+        var origin2 = 'Greenwich, England';
+        var destinationA = 'Stockholm, Sweden';
+        var destinationB = new google.maps.LatLng(50.087692, 14.421150);
+
+        var service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+            {
+                origins: [origin1, origin2],
+                destinations: [destinationA, destinationB],
+                travelMode: 'DRIVING'
+            }, callback);
+
+        function callback(response, status) {
+            // See Parsing the Results for
+            // the basics of a callback function.
+        }*/
+    };
+
+    function getActualLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition);
+        } else {
+            console.log("Geolocation is not supported by this browser.");
+        }
+        function showPosition(position) {
+            console.log(position);
+            $scope.actualPosition.latitude = position.coords.latitude;
+            $scope.actualPosition.longitude = position.coords.longitude;
+        }
     }
 
 });
